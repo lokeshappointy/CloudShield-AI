@@ -1,0 +1,135 @@
+name: Terraform Cloudflare CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths: # Trigger only if files within 'cloudflare' or this workflow change
+      - 'cloudflare/**/*.tf'
+      - 'cloudflare/**/*.tfvars'
+      - '.github/workflows/terraform-cloudflare.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'cloudflare/**/*.tf'
+      - 'cloudflare/**/*.tfvars'
+      - '.github/workflows/terraform-cloudflare.yml'
+
+permissions:
+  contents: read
+  pull-requests: write # To comment on PRs with plan output
+
+defaults:
+  run:
+    working-directory: ./cloudflare # Set default working directory for all run steps
+
+jobs:
+  terraform_cloudflare:
+    name: Terraform Cloudflare Plan & Apply
+    runs-on: ubuntu-latest
+    env:
+      # These secrets must be set in your GitHub repository settings
+      # TF_VAR_ prefix is automatically picked up by Terraform for variables
+      TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+      # For non-TF_VAR env vars used directly in steps (if needed, not currently for provider):
+      # CLOUDFLARE_API_TOKEN_RAW: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.5" # Specify your desired Terraform version
+          # terraform_wrapper: false # Not strictly needed for direct CLI usage anymore
+
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+
+      - name: Terraform Init
+        id: init
+        run: terraform init -input=false
+        # Provider will use TF_VAR_cloudflare_api_token implicitly
+        # If you had backend config needing secrets, you'd pass them here or via env vars.
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+
+      - name: Terraform Plan
+        id: plan
+        # The -var-file option is not needed if using TF_VAR_ env vars for secrets.
+        # If you had a non-sensitive tfvars file like `terraform.tfvars` committed,
+        # you could use `-var-file="terraform.tfvars"`
+        run: terraform plan -no-color -input=false -out=tfplan
+        continue-on-error: true # Allow plan to fail for PR comments
+
+      - name: Comment Plan Output on PR
+        if: github.event_name == 'pull_request' && steps.plan.outcome != 'success'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `### Terraform Cloudflare Workflow
+            Working Directory: \`./cloudflare\`
+            #### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Validation 🤖 (${{ steps.validate.outcome }})
+            <details><summary>Validation Output</summary>
+
+            \`\`\`\n
+            ${{ steps.validate.outputs.stdout || 'No output / Passed' }}
+            \`\`\`
+
+            </details>
+            #### Terraform Plan 📖 (\`${{ steps.plan.outcome }}\`)
+            <details><summary>Show Plan</summary>
+
+            \`\`\`terraform\n
+            ${{ steps.plan.outputs.stdout || 'Plan failed or no changes.' }}
+            \`\`\`
+
+            </details>
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Comment Plan Success on PR
+        if: github.event_name == 'pull_request' && steps.plan.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `### Terraform Cloudflare Workflow
+            Working Directory: \`./cloudflare\`
+            #### Terraform Plan Succeeded 🎉
+            All Terraform steps (_format, init, validate, plan_) for Cloudflare passed.
+            <details><summary>Show Plan</summary>
+
+            \`\`\`terraform\n
+            ${{ steps.plan.outputs.stdout }}
+            \`\`\`
+
+            </details>
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.plan.outcome == 'success' && steps.validate.outcome == 'success'
+        run: terraform apply -auto-approve -input=false tfplan

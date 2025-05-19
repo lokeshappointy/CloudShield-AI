@@ -1,0 +1,35 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+*.tfplan
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+cloudflare/terraform.tfvars
+**/terraform.tfvars
+
+# Local Mac files
+.DS_Store
+
+# Python (for Part 2 later)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log

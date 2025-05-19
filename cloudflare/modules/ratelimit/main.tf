@@ -22,9 +22,12 @@ resource "cloudflare_ruleset" "rate_limiting_ruleset" {
       description = rules.value.description
       enabled     = rules.value.enabled
 
-      // Use expression_override if provided, otherwise fallback to constructing from match_request_uri_path
-      // The fallback here would still use 'matches', so ensure expression_override is always provided if matches is not allowed.
-      expression  = try(rules.value.expression_override, "(http.request.uri.path matches \"${rules.value.match_request_uri_path}\")")
+      // MODIFIED: Directly access expression_override
+      // This is now safe because the module's variable definition for 
+      // custom_ratelimit_rules[*].expression_override is a non-optional string.
+      // If the root module fails to provide it, Terraform will error out
+      // during variable validation when passing to the module.
+      expression  = rules.value.expression_override
 
       ratelimit {
         characteristics       = rules.value.characteristics

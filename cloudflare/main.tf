@@ -15,7 +15,7 @@ provider "cloudflare" {
 module "waf_custom_rules" {
   source              = "./modules/waf"
   zone_id             = var.cloudflare_zone_id
-  custom_waf_rules    = var.waf_rules
+  custom_waf_rules    = var.baseline_waf_rules
   ruleset_description = "" // Pass the default empty description from state. Can be made a variable.
 }
 

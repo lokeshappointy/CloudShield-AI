@@ -66,8 +66,9 @@ jobs:
 
       - name: Terraform Plan
         id: plan
-        run: terraform plan -no-color -input=false -out=tfplan_cf
-        continue-on-error: true 
+        run: |
+          terraform plan -no-color -input=false -out=tfplan.out
+          echo "exitcode=$?" >> $GITHUB_OUTPUT
 
       - name: Terraform Apply
         if: |
@@ -76,4 +77,4 @@ jobs:
           steps.plan.outcome == 'success' && 
           steps.validate.outcome == 'success' &&
           steps.plan.outputs.exitcode == '2'
-        run: terraform apply -auto-approve -input=false tfplan_cf
+        run: terraform apply -auto-approve -input=false tfplan.out

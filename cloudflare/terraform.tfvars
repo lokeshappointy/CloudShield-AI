@@ -178,7 +178,19 @@ baseline_waf_rules = [
       (http.request.uri.path eq "/suspicious")
     EOT
     action_parameters = null
+  },
+
+  {
+    action            = "allow",
+    description       = "WAF Test: Allow requests to /cicd-check (waf-test.appointy.ai)",
+    enabled           = true,
+    expression        = <<EOT
+      (http.host eq "waf-test.appointy.ai") and 
+      (http.request.uri.path eq "/cicd-check")
+    EOT
+    action_parameters = null
   }
+
 
   // --------------------------------------------------------------------------
   // END: NEW WAF Rules

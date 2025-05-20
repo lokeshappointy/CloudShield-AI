@@ -69,66 +69,11 @@ jobs:
         run: terraform plan -no-color -input=false -out=tfplan_cf
         continue-on-error: true 
 
-      # PR Commenting steps (same as before)
-      - name: Comment Plan Output on PR (if plan failed or has changes)
-        if: |
-          github.event_name == 'pull_request' &&
-          (steps.plan.outcome == 'failure' || steps.plan.outputs.exitcode != 0)
-        uses: actions/github-script@v7
-        # ... (script content as before) ...
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const planOutput = `${{ steps.plan.outputs.stdout || steps.plan.outputs.stderr || 'No plan output / Plan error' }}`;
-            const sanitizedOutput = planOutput.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
-            const limitedOutput = sanitizedOutput.substring(0, 65000);
-            var header = '### Terraform Cloudflare Plan Status 📝';
-            if (steps.plan.outcome == 'failure' || steps.plan.outputs.exitcode == 1) {
-              header = '### Terraform Cloudflare Plan Failed ❌';
-            } else if (steps.plan.outputs.exitcode == 2) {
-              header = '### Terraform Cloudflare Plan Has Changes 📝';
-            }
-            const outputBody = `${header}
-            Working Directory: \`./cloudflare\`
-            Format Check: \`${{ steps.fmt.outcome }}\`
-            Initialization: \`${{ steps.init.outcome }}\`
-            Validation: \`${{ steps.validate.outcome }}\`
-            Plan: \`${{ steps.plan.outcome }}\` (\`exit code: ${{ steps.plan.outputs.exitcode }}\`)
-            <details><summary>Show Plan Output</summary>
-
-            \`\`\`terraform
-            ${limitedOutput}
-            \`\`\`
-
-            </details>
-            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-            github.rest.issues.createComment({
-              issue_number: context.issue.number, owner: context.repo.owner, repo: context.repo.repo, body: outputBody
-            });
-            if (steps.plan.outcome == 'failure' || steps.plan.outputs.exitcode == 1) {
-              throw new Error('Terraform plan failed or has errors.');
-            }
-
-      - name: Comment Plan "No Changes" on PR
-        if: github.event_name == 'pull_request' && steps.plan.outcome == 'success' && steps.plan.outputs.exitcode == 0
-        uses: actions/github-script@v7
-        # ... (script content as before) ...
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const output = `### Terraform Cloudflare Plan Succeeded - No Changes ✨
-            Working Directory: \`./cloudflare\`
-            All Terraform steps (_format, init, validate, plan_) for Cloudflare passed, and the plan indicates no infrastructure changes are required.
-            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-            github.rest.issues.createComment({
-              issue_number: context.issue.number, owner: context.repo.owner, repo: context.repo.repo, body: output
-            });
-
       - name: Terraform Apply
         if: |
           github.ref == 'refs/heads/main' && 
           github.event_name == 'push' && 
           steps.plan.outcome == 'success' && 
           steps.validate.outcome == 'success' &&
-          steps.plan.outputs.exitcode == 2
+          steps.plan.outputs.exitcode == '2'
         run: terraform apply -auto-approve -input=false tfplan_cf

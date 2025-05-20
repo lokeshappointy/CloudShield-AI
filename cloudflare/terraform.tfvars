@@ -173,17 +173,6 @@ baseline_waf_rules = [
     logging           = null
   },
 
-  {
-    action      = "challenge",
-    description = "WAF Test: Apply  challenge to /suspicious",
-    enabled     = true,
-    expression  = <<EOT
-      (http.host eq "waf-test.appointy.ai") and 
-      (http.request.uri.path eq "/suspicious")
-    EOT
-    action_parameters = null,
-    logging           = null
-  }
 
   // --------------------------------------------------------------------------
   // END: NEW WAF Rules

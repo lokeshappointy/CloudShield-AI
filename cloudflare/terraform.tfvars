@@ -181,8 +181,8 @@ baseline_waf_rules = [
   },
 
   {
-    action            = "allow",
-    description       = "WAF Test: Allow requests to /cicd-check (waf-test.appointy.ai)",
+    action            = "block",
+    description       = "WAF Test: Block requests to /cicd-check (waf-test.appointy.ai)",
     enabled           = true,
     expression        = <<EOT
       (http.host eq "waf-test.appointy.ai") and 

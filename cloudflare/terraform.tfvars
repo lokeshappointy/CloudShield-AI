@@ -117,7 +117,7 @@ baseline_waf_rules = [
   // --------------------------------------------------------------------------
 
   {
-    action            = "managed_challenge",
+    action            = "block",
     description       = "WAF Test: Dictionary Attack on Login (waf-test.appointy.ai)",
     enabled           = true,
     expression        = <<EOT

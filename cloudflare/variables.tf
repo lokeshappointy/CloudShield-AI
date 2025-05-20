@@ -34,7 +34,7 @@ variable "ratelimit_rules" {
   type = list(object({
     name                       = string
     description                = string
-    match_request_uri_path     = string 
+    match_request_uri_path     = string
     expression_override        = string // Now effectively mandatory, so no 'optional()' here for clarity
     match_response_headers     = optional(list(object({ name = string, op = string, value = string })), [])
     characteristics            = list(string)

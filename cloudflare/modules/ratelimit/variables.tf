@@ -6,11 +6,11 @@ variable "zone_id" {
 variable "custom_ratelimit_rules" {
   description = "List of custom rate limiting rules to be created."
   type = list(object({
-    name                       = string
-    description                = string
-    match_request_uri_path     = string
-    expression_override        = string
-    match_response_headers     = optional(list(object({
+    name                   = string
+    description            = string
+    match_request_uri_path = string
+    expression_override    = string
+    match_response_headers = optional(list(object({
       name  = string
       op    = string
       value = string

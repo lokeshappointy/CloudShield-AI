@@ -10,6 +10,8 @@
 ## Ignore crash logs and plan files
 crash.log
 *.tfplan
+cloudflare/tfplan.out
+*/tfplan.out
 
 ## Ignore override files
 override.tf

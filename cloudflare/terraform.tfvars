@@ -18,7 +18,7 @@ baseline_waf_rules = [
       phases   = ["http_ratelimit", "http_request_firewall_managed"],
       products = ["uaBlock"]
     },
-    logging     = { enabled = true }
+    logging = { enabled = true }
   },
 
   {
@@ -31,7 +31,7 @@ baseline_waf_rules = [
       phases   = ["http_ratelimit", "http_request_firewall_managed"],
       products = ["uaBlock"]
     },
-    logging     = { enabled = true }
+    logging = { enabled = true }
   },
 
   {
@@ -44,7 +44,7 @@ baseline_waf_rules = [
       phases   = ["http_ratelimit", "http_request_firewall_managed", "http_request_sbfm"],
       products = ["bic", "rateLimit", "uaBlock", "waf"]
     },
-    logging     = null
+    logging = { enabled = true }
   },
 
   {
@@ -57,7 +57,7 @@ baseline_waf_rules = [
       phases   = ["http_ratelimit", "http_request_firewall_managed", "http_request_sbfm"],
       products = ["bic", "rateLimit", "securityLevel", "uaBlock", "waf"]
     },
-    logging     = { enabled = true }
+    logging = { enabled = true }
   },
 
   {
@@ -70,7 +70,7 @@ baseline_waf_rules = [
       phases   = ["http_request_firewall_managed"],
       products = null
     },
-    logging     = { enabled = true }
+    logging = { enabled = true }
   },
 
   {
@@ -83,7 +83,7 @@ baseline_waf_rules = [
       phases   = ["http_request_firewall_managed"],
       products = null
     },
-    logging     = { enabled = true }
+    logging = { enabled = true }
   },
 
   {
@@ -96,16 +96,15 @@ baseline_waf_rules = [
       phases   = ["http_request_firewall_managed"],
       products = null
     },
-    logging     = { enabled = true }
+    logging = { enabled = true }
   },
 
   {
-    action      = "block",
-    description = "[SKIP] Office IP Level 4",
-    enabled     = true,
-    expression  = "(ip.src ne 49.249.139.123)",
-    action_parameters = null,
-    logging     = null
+    action            = "block",
+    description       = "[SKIP] Office IP Level 4",
+    enabled           = true,
+    expression        = "(ip.src ne 49.249.139.123)",
+    action_parameters = null
   },
 
   // --------------------------------------------------------------------------
@@ -118,10 +117,10 @@ baseline_waf_rules = [
   // --------------------------------------------------------------------------
 
   {
-    action      = "managed_challenge", 
-    description = "WAF Test: Dictionary Attack on Login (waf-test.appointy.ai)",
-    enabled     = true,
-    expression  = <<EOT
+    action            = "managed_challenge",
+    description       = "WAF Test: Dictionary Attack on Login (waf-test.appointy.ai)",
+    enabled           = true,
+    expression        = <<EOT
       (http.host eq "waf-test.appointy.ai") and 
       (http.request.method eq "POST") and 
       (
@@ -132,17 +131,15 @@ baseline_waf_rules = [
         starts_with(http.request.uri.path, "/wp-login.php")
       )
     EOT
-    action_parameters = null,
-    logging           = null
+    action_parameters = null
   },
 
   {
-    action      = "block",
-    description = "WAF Test: SQLi Attempt in Query String (waf-test.appointy.ai)",
-    enabled     = true,
-    expression  = "(http.host eq \"waf-test.appointy.ai\") and ((lower(http.request.uri.query) contains \"select\" and lower(http.request.uri.query) contains \"from\") or (lower(http.request.uri.query) contains \"union select\") or (lower(http.request.uri.query) contains \"drop table\"))",
-    action_parameters = null,
-    logging           = null
+    action            = "block",
+    description       = "WAF Test: SQLi Attempt in Query String (waf-test.appointy.ai)",
+    enabled           = true,
+    expression        = "(http.host eq \"waf-test.appointy.ai\") and ((lower(http.request.uri.query) contains \"select\" and lower(http.request.uri.query) contains \"from\") or (lower(http.request.uri.query) contains \"union select\") or (lower(http.request.uri.query) contains \"drop table\"))",
+    action_parameters = null
   },
 
 
@@ -158,31 +155,29 @@ baseline_waf_rules = [
       phases   = ["http_request_firewall_managed"],
       products = null
     },
-    logging           = null
+    logging = { enabled = true }
   },
 
   {
-    action      = "block",
-    description = "WAF Test: Block access to /forbidden",
-    enabled     = true,
-    expression  = <<EOT
+    action            = "block",
+    description       = "WAF Test: Block access to /forbidden",
+    enabled           = true,
+    expression        = <<EOT
       (http.host eq "waf-test.appointy.ai") and 
       (http.request.uri.path eq "/forbidden")
     EOT
-    action_parameters = null,
-    logging           = null
+    action_parameters = null
   },
 
   {
-    action      = "challenge",
-    description = "WAF Test: Apply  challenge to /suspicious",
-    enabled     = true,
-    expression  = <<EOT
+    action            = "challenge",
+    description       = "WAF Test: Apply  challenge to /suspicious",
+    enabled           = true,
+    expression        = <<EOT
       (http.host eq "waf-test.appointy.ai") and 
       (http.request.uri.path eq "/suspicious")
     EOT
-    action_parameters = null,
-    logging           = null
+    action_parameters = null
   }
 
   // --------------------------------------------------------------------------
@@ -233,7 +228,7 @@ ratelimit_rules = [
     characteristics            = ["ip.src", "cf.colo.id"],
     period_seconds             = 60,
     requests_per_period        = 10,
-    mitigation_timeout_seconds = 60, 
+    mitigation_timeout_seconds = 60,
     action                     = "block",
     enabled                    = true
   }

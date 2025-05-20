@@ -44,7 +44,7 @@ baseline_waf_rules = [
       phases   = ["http_ratelimit", "http_request_firewall_managed", "http_request_sbfm"],
       products = ["bic", "rateLimit", "uaBlock", "waf"]
     },
-    logging     = { enabled = true }
+    logging     = null
   },
 
   {
@@ -180,18 +180,6 @@ baseline_waf_rules = [
     expression  = <<EOT
       (http.host eq "waf-test.appointy.ai") and 
       (http.request.uri.path eq "/suspicious")
-    EOT
-    action_parameters = null,
-    logging           = null
-  },
-
-  {
-    action      = "block",
-    description = "Test Rule: Block /cicd-check",
-    enabled     = true,
-    expression  = <<EOT
-      (http.host eq "waf-test.appointy.ai") and 
-      (http.request.uri.path eq "/cicd-check")
     EOT
     action_parameters = null,
     logging           = null

@@ -1,0 +1,134 @@
+name: Terraform Cloudflare CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'cloudflare/**'
+      - '.github/workflows/terraform-cloudflare.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'cloudflare/**'
+      - '.github/workflows/terraform-cloudflare.yml'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+defaults:
+  run:
+    working-directory: ./cloudflare
+
+jobs:
+  terraform_cloudflare_plan_apply:
+    name: Terraform Cloudflare Plan & Apply
+    if: github.actor != 'dependabot[bot]' && (!contains(github.event.head_commit.message, '[skip ci]')) && (!contains(github.event.head_commit.message, '[skip cloudflare]'))
+    runs-on: ubuntu-latest
+
+    env:
+      TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+      # GOOGLE_APPLICATION_CREDENTIALS will be set by the auth step
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Authenticate to Google Cloud using SA JSON Key
+      - name: Authenticate to Google Cloud (for GCS Backend)
+        id: 'auth_gcs'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY_JSON }}' # Use the secret holding the SA key
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.12.0" # Or your chosen version
+
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+
+      - name: Terraform Init
+        id: init
+        run: terraform init -input=false
+        # Terraform GCS backend will use credentials sourced by google-github-actions/auth
+        # (which sets GOOGLE_APPLICATION_CREDENTIALS env var implicitly)
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color -input=false -out=tfplan_cf
+        continue-on-error: true 
+
+      # PR Commenting steps (same as before)
+      - name: Comment Plan Output on PR (if plan failed or has changes)
+        if: |
+          github.event_name == 'pull_request' &&
+          (steps.plan.outcome == 'failure' || steps.plan.outputs.exitcode != 0)
+        uses: actions/github-script@v7
+        # ... (script content as before) ...
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const planOutput = `${{ steps.plan.outputs.stdout || steps.plan.outputs.stderr || 'No plan output / Plan error' }}`;
+            const sanitizedOutput = planOutput.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+            const limitedOutput = sanitizedOutput.substring(0, 65000);
+            var header = '### Terraform Cloudflare Plan Status 📝';
+            if (steps.plan.outcome == 'failure' || steps.plan.outputs.exitcode == 1) {
+              header = '### Terraform Cloudflare Plan Failed ❌';
+            } else if (steps.plan.outputs.exitcode == 2) {
+              header = '### Terraform Cloudflare Plan Has Changes 📝';
+            }
+            const outputBody = `${header}
+            Working Directory: \`./cloudflare\`
+            Format Check: \`${{ steps.fmt.outcome }}\`
+            Initialization: \`${{ steps.init.outcome }}\`
+            Validation: \`${{ steps.validate.outcome }}\`
+            Plan: \`${{ steps.plan.outcome }}\` (\`exit code: ${{ steps.plan.outputs.exitcode }}\`)
+            <details><summary>Show Plan Output</summary>
+
+            \`\`\`terraform
+            ${limitedOutput}
+            \`\`\`
+
+            </details>
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number, owner: context.repo.owner, repo: context.repo.repo, body: outputBody
+            });
+            if (steps.plan.outcome == 'failure' || steps.plan.outputs.exitcode == 1) {
+              throw new Error('Terraform plan failed or has errors.');
+            }
+
+      - name: Comment Plan "No Changes" on PR
+        if: github.event_name == 'pull_request' && steps.plan.outcome == 'success' && steps.plan.outputs.exitcode == 0
+        uses: actions/github-script@v7
+        # ... (script content as before) ...
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `### Terraform Cloudflare Plan Succeeded - No Changes ✨
+            Working Directory: \`./cloudflare\`
+            All Terraform steps (_format, init, validate, plan_) for Cloudflare passed, and the plan indicates no infrastructure changes are required.
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number, owner: context.repo.owner, repo: context.repo.repo, body: output
+            });
+
+      - name: Terraform Apply
+        if: |
+          github.ref == 'refs/heads/main' && 
+          github.event_name == 'push' && 
+          steps.plan.outcome == 'success' && 
+          steps.validate.outcome == 'success' &&
+          steps.plan.outputs.exitcode == 2
+        run: terraform apply -auto-approve -input=false tfplan_cf

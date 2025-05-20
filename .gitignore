@@ -1,33 +1,63 @@
 # Terraform
-**/.terraform/*
-*.tfstate
-*.tfstate.*
+## Ignore all .terraform directories recursively
+**/.terraform/
+
+## Ignore local state files and backups - these should ideally be in a remote backend
+# If you are using local state and NOT committing it (recommended for local state):
+**/*.tfstate
+**/*.tfstate.*
+
+## Ignore crash logs and plan files
 crash.log
 *.tfplan
+
+## Ignore override files
 override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
 
+# Terraform lock file - DO NOT ignore the .terraform.lock.hcl at the root of each configuration directory
+# This file should be committed to version control.
+# The following lines ensure that if one was accidentally ignored by a broader pattern,
+# it's explicitly un-ignored. However, the patterns above are generally specific enough.
+# !.terraform.lock.hcl
+# !*/.terraform.lock.hcl # If you have configurations in subdirectories like 'cloudflare/'
 
-# Local Mac files
-.DS_Store
-
-# Python (for Part 2 later)
+# Python (Good to have for Part 2 later)
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
 .Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+# Environments
+.env
+.venv
 env/
 venv/
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.log
+ENV/
+env.bak/
+venv.bak/
+
+# IDE / Editor specific
+.vscode/
+.idea/
+*.swp
+*~

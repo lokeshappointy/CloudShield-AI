@@ -1,19 +1,19 @@
 variable "zone_id" {
-  description = "Cloudflare Zone ID"
+  description = "Cloudflare Zone ID for which the rate limiting rules will be applied."
   type        = string
 }
 
 variable "custom_ratelimit_rules" {
-  description = "A list of Rate Limiting rules definitions"
+  description = "List of custom rate limiting rules to be created."
   type = list(object({
     name                       = string
     description                = string
-    match_request_uri_path     = string // Kept for potential future use or reference
-    expression_override        = string // ADDED and made non-optional for this module
+    match_request_uri_path     = string
+    expression_override        = string
     match_response_headers     = optional(list(object({
-        name = string
-        op = string
-        value = string
+      name  = string
+      op    = string
+      value = string
     })), [])
     characteristics            = list(string)
     period_seconds             = number
@@ -22,5 +22,4 @@ variable "custom_ratelimit_rules" {
     action                     = string
     enabled                    = optional(bool, true)
   }))
-  default = []
 }

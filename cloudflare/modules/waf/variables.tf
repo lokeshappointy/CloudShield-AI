@@ -1,29 +1,28 @@
 variable "zone_id" {
-  description = "Cloudflare Zone ID"
+  description = "Cloudflare Zone ID for which the WAF rules will be applied."
   type        = string
 }
 
 variable "custom_waf_rules" {
-  description = "A list of WAF rules definitions for the http_request_firewall_custom ruleset."
+  description = "List of custom WAF rules to create."
   type = list(object({
     action      = string
     description = string
     enabled     = optional(bool, true)
     expression  = string
-    action_parameters = optional(object({ // Keep this as defined before
+    action_parameters = optional(object({
       ruleset  = optional(string)
       phases   = optional(list(string))
       products = optional(list(string))
     }), null)
-    logging = optional(object({ // ADDED logging attribute
+    logging = optional(object({
       enabled = bool
     }), null)
   }))
-  default = []
 }
 
 variable "ruleset_description" {
-  description = "Description for the WAF ruleset."
+  description = "Optional description for the custom WAF ruleset."
   type        = string
-  default     = "" // Default to empty string to match the current state
+  default     = "Custom WAF Ruleset"
 }

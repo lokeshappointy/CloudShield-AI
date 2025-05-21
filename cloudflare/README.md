@@ -141,15 +141,15 @@ All Terraform commands should be executed from the `cloudflare/` directory.
 ### Initial Setup
 
 1. **Install Terraform CLI** (>= v1.1.2)
-2. **Set API Token** (recommended via shell env):
+2. **Set API Token & Zone ID** (recommended via shell env):
 
    ```bash
    export TF_VAR_cloudflare_api_token="YOUR_API_TOKEN"
+   export TF_VAR_cloudflare_zone_id="YOUR_ZONE_ID"
    ```
 3. **Prepare `terraform.tfvars`**:
 
    ```hcl
-   cloudflare_zone_id = "YOUR_ZONE_ID"
 
    baseline_waf_rules = [
      // ... rule objects ...
@@ -199,15 +199,46 @@ To skip confirmation (use with caution):
 terraform apply -auto-approve
 ```
 
-### Managing Rules
+### Managing WAF & Rate Limiting Rules
 
-Edit the lists in `terraform.tfvars`:
+> You can easily add, update, or delete rules by modifying `terraform.tfvars`.
 
-* **Add Rule:** Append to the list
-* **Modify Rule:** Edit the object
-* **Delete Rule:** Remove the object
+#### 🔒 WAF Rules (`baseline_waf_rules`)
 
-Always follow with `terraform plan` and `terraform apply` to reflect changes.
+* **Add**: Append a new rule object to the `baseline_waf_rules` list.
+
+  **Example:**
+
+  ```hcl
+  {
+    action      = "challenge",
+    description = "WAF Test: Apply challenge to /suspicious",
+    enabled     = true,
+    expression  = <<EOT
+      (http.host eq "waf-test.appointy.ai") and 
+      (http.request.uri.path eq "/suspicious")
+    EOT,s
+    action_parameters = null
+  }
+  ```
+
+* **Update**: Modify fields like `expression`, `action`, or `description`.
+
+* **Delete**: Remove the object from the list.
+
+#### 🚦 Rate Limiting Rules (`ratelimit_rules`)
+
+* **Add**: Append a new rule object to the list similar to waf but with different parameters .
+* **Update/Delete**: Modify or remove as needed.
+
+✅ After any changes:
+
+```bash
+terraform plan
+terraform apply
+```
+
+> Tip: Use meaningful descriptions and test expressions carefully.
 
 ---
 
@@ -244,8 +275,7 @@ A workflow is defined in `.github/workflows/terraform-cloudflare.yml`.
 
 ### Triggers
 
-* **Push to `main`**: Triggers `terraform apply`
-* **Pull Request to `main`**: Generates `terraform plan` and comments on the PR
+* **Push to `main`**: Triggers the CICD pipeline
 
 ### Scope
 
@@ -254,7 +284,7 @@ A workflow is defined in `.github/workflows/terraform-cloudflare.yml`.
 ### Secrets Required
 
 * `CLOUDFLARE_API_TOKEN`
-* `CLOUDFLARE_ZONE_ID_APPOINTY`
+* `CLOUDFLARE_ZONE_ID`
 
 ---
 
@@ -268,4 +298,3 @@ A workflow is defined in `.github/workflows/terraform-cloudflare.yml`.
 
 ---
 
-For any questions or issues, please refer to the official [Cloudflare Terraform Provider documentation](https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs).
